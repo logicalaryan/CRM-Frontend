@@ -1,7 +1,13 @@
 {
   "name": "crm-frontend",
+  "version": "1.0.0",
+  "description": "CRM Frontend - Nuxt 3 Application",
   "private": true,
   "type": "module",
+  "engines": {
+    "node": ">=18.0.0 <21",
+    "npm": ">=9.0.0 <12"
+  },
   "scripts": {
     "build": "nuxt build",
     "dev": "nuxt dev",
@@ -22,5 +28,8 @@
   "devDependencies": {
     "@nuxtjs/tailwindcss": "^6.11.4",
     "typescript": "^5.4.3"
+  },
+  "overrides": {
+    "commander": "13.1.0"
   }
 }

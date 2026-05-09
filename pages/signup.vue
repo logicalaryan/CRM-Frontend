@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import { useAuthStore } from '~/stores/auth';
 import UiButton from '~/components/ui/Button.vue';
 
@@ -8,32 +8,55 @@ definePageMeta({
   middleware: ['guest']
 });
 
-useHead({ title: 'Sign In - CRM Enterprise' });
+useHead({ title: 'Sign Up - CRM Enterprise' });
 
 const authStore = useAuthStore();
 
+const fullName = ref('');
 const email = ref('');
 const password = ref('');
+const confirmPassword = ref('');
+const agreeTerms = ref(false);
 const showPassword = ref(false);
-const rememberMe = ref(false);
 
 const isLoading = ref(false);
 const errorMsg = ref('');
 const successMsg = ref('');
 
-const handleLogin = async () => {
+// Password strength calculator
+const passwordStrength = computed(() => {
+  if (!password.value) return 0;
+  let strength = 0;
+  if (password.value.length >= 8) strength++;
+  if (password.value.match(/[A-Z]/)) strength++;
+  if (password.value.match(/[0-9]/)) strength++;
+  if (password.value.match(/[^A-Za-z0-9]/)) strength++;
+  return strength;
+});
+
+const handleSignup = async () => {
   errorMsg.value = '';
   successMsg.value = '';
+  
+  if (password.value !== confirmPassword.value) {
+    errorMsg.value = 'Passwords do not match.';
+    return;
+  }
+  if (!agreeTerms.value) {
+    errorMsg.value = 'You must agree to the Terms & Conditions.';
+    return;
+  }
+  
   isLoading.value = true;
   
   try {
-    await authStore.login(email.value, password.value, rememberMe.value);
-    successMsg.value = 'Login successful! Redirecting...';
+    await authStore.signup(fullName.value, email.value, password.value);
+    successMsg.value = 'Account created! Redirecting to login...';
     setTimeout(() => {
-      navigateTo('/leads');
-    }, 1000);
+      navigateTo('/login');
+    }, 1500);
   } catch (err: any) {
-    errorMsg.value = err.message || 'Invalid email or password.';
+    errorMsg.value = err.message || 'Failed to create account. Please try again.';
   } finally {
     isLoading.value = false;
   }
@@ -43,8 +66,8 @@ const handleLogin = async () => {
 <template>
   <div>
     <div class="mb-8">
-      <h2 class="text-2xl font-bold text-slate-900">Welcome back</h2>
-      <p class="text-slate-500 mt-1">Please enter your details to sign in.</p>
+      <h2 class="text-2xl font-bold text-slate-900">Create an account</h2>
+      <p class="text-slate-500 mt-1">Start managing your leads in seconds.</p>
     </div>
 
     <!-- Alert Messages -->
@@ -62,7 +85,28 @@ const handleLogin = async () => {
       {{ successMsg }}
     </div>
 
-    <form class="space-y-5" @submit.prevent="handleLogin">
+    <form class="space-y-5" @submit.prevent="handleSignup">
+      <!-- Full Name -->
+      <div>
+        <label for="fullName" class="block text-sm font-medium text-slate-700 mb-1">Full Name</label>
+        <div class="relative">
+          <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+            </svg>
+          </div>
+          <input 
+            id="fullName" 
+            name="fullName" 
+            type="text" 
+            required 
+            v-model="fullName"
+            class="pl-10 appearance-none block w-full px-3 py-2 border border-slate-300 rounded-lg shadow-sm placeholder-slate-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm transition-colors" 
+            placeholder="John Doe" 
+          />
+        </div>
+      </div>
+
       <!-- Email -->
       <div>
         <label for="email" class="block text-sm font-medium text-slate-700 mb-1">Email Address</label>
@@ -116,26 +160,59 @@ const handleLogin = async () => {
             </svg>
           </button>
         </div>
+        <!-- Password Strength Indicator -->
+        <div v-if="password" class="mt-2 flex items-center space-x-1">
+          <div class="h-1 flex-1 rounded-full bg-slate-200 overflow-hidden">
+            <div class="h-full transition-all" 
+                 :class="{
+                   'w-1/4 bg-red-500': passwordStrength === 1,
+                   'w-2/4 bg-yellow-500': passwordStrength === 2,
+                   'w-3/4 bg-blue-500': passwordStrength === 3,
+                   'w-full bg-green-500': passwordStrength === 4
+                 }"></div>
+          </div>
+          <span class="text-xs text-slate-500 min-w-[60px] text-right">
+            {{ ['Weak', 'Fair', 'Good', 'Strong'][passwordStrength - 1] || 'Too short' }}
+          </span>
+        </div>
       </div>
 
-      <div class="flex items-center justify-between">
-        <div class="flex items-center">
+      <!-- Confirm Password -->
+      <div>
+        <label for="confirmPassword" class="block text-sm font-medium text-slate-700 mb-1">Confirm Password</label>
+        <div class="relative">
+          <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+            </svg>
+          </div>
           <input 
-            id="remember-me" 
-            name="remember-me" 
+            id="confirmPassword" 
+            name="confirmPassword" 
+            type="password" 
+            required 
+            v-model="confirmPassword"
+            class="pl-10 appearance-none block w-full px-3 py-2 border border-slate-300 rounded-lg shadow-sm placeholder-slate-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm transition-colors" 
+            placeholder="••••••••" 
+          />
+        </div>
+      </div>
+
+      <div class="flex items-start">
+        <div class="flex items-center h-5">
+          <input 
+            id="terms" 
+            name="terms" 
             type="checkbox" 
-            v-model="rememberMe"
+            required
+            v-model="agreeTerms"
             class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-slate-300 rounded cursor-pointer" 
           />
-          <label for="remember-me" class="ml-2 block text-sm text-slate-700 cursor-pointer">
-            Remember me
-          </label>
         </div>
-
-        <div class="text-sm">
-          <NuxtLink to="/forgot-password" class="font-medium text-indigo-600 hover:text-indigo-500">
-            Forgot password?
-          </NuxtLink>
+        <div class="ml-2 text-sm">
+          <label for="terms" class="font-medium text-slate-700 cursor-pointer">
+            I agree to the <a href="#" class="text-indigo-600 hover:text-indigo-500">Terms</a> and <a href="#" class="text-indigo-600 hover:text-indigo-500">Privacy Policy</a>
+          </label>
         </div>
       </div>
 
@@ -145,15 +222,15 @@ const handleLogin = async () => {
             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
             <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
           </svg>
-          {{ isLoading ? 'Signing in...' : 'Sign in' }}
+          {{ isLoading ? 'Creating account...' : 'Create Account' }}
         </UiButton>
       </div>
     </form>
 
     <div class="mt-8 text-center text-sm text-slate-600">
-      Don't have an account? 
-      <NuxtLink to="/signup" class="font-medium text-indigo-600 hover:text-indigo-500">
-        Create an account
+      Already have an account? 
+      <NuxtLink to="/login" class="font-medium text-indigo-600 hover:text-indigo-500">
+        Sign in
       </NuxtLink>
     </div>
   </div>

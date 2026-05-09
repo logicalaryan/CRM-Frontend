@@ -1,10 +1,9 @@
-import { defineNuxtRouteMiddleware, navigateTo } from '#imports';
+import { defineNuxtRouteMiddleware, navigateTo, useCookie } from '#imports';
 
 export default defineNuxtRouteMiddleware((to, from) => {
-  // Mock authentication check
-  const isAuthenticated = false;
+  const token = useCookie('auth_token');
   
-  if (isAuthenticated) {
-    return navigateTo('/');
+  if (token.value) {
+    return navigateTo('/leads');
   }
 });

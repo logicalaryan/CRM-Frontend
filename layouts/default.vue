@@ -1,6 +1,14 @@
 <script setup lang="ts">
 import NotificationDropdown from '~/components/ui/NotificationDropdown.vue';
 import ToastContainer from '~/components/ui/ToastContainer.vue';
+import { useAuthStore } from '~/stores/auth';
+
+const authStore = useAuthStore();
+
+const handleLogout = async () => {
+  await authStore.logout();
+  navigateTo('/login');
+};
 // Default layout with Sidebar and Navbar
 </script>
 
@@ -14,6 +22,14 @@ import ToastContainer from '~/components/ui/ToastContainer.vue';
       <nav class="flex-1 py-4 flex flex-col gap-2 px-4">
         <NuxtLink to="/leads" class="px-4 py-2 rounded hover:bg-slate-800">Leads</NuxtLink>
       </nav>
+      <div class="p-4 border-t border-slate-800">
+        <button @click="handleLogout" class="w-full text-left px-4 py-2 rounded text-slate-300 hover:text-white hover:bg-slate-800 transition-colors flex items-center">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+          </svg>
+          Sign Out
+        </button>
+      </div>
     </aside>
 
     <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
@@ -22,7 +38,9 @@ import ToastContainer from '~/components/ui/ToastContainer.vue';
         <div class="font-semibold text-slate-700">Command Center</div>
         <div class="flex items-center gap-4">
           <NotificationDropdown />
-          <div class="w-8 h-8 rounded-full bg-slate-200"></div>
+          <div class="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold text-sm">
+            {{ authStore.userInitials }}
+          </div>
         </div>
       </header>
 
